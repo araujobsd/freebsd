@@ -71,7 +71,7 @@ SRCS=	\
 .PATH:  ${BHYVE_SYSDIR}/sys/amd64/vmm
 SRCS+=	vmm_instruction_emul.c
 
-LIBADD=	vmmapi md pthread z util sbuf cam
+LIBADD=	vmmapi md pthread z util sbuf cam ucl xo
 
 .if ${MK_OPENSSL} == "no"
 CFLAGS+=-DNO_OPENSSL
@@ -86,6 +86,10 @@ CFLAGS+= -I${BHYVE_SYSDIR}/sys/dev/usb/controller
 .ifdef GDB_LOG
 CFLAGS+=-DGDB_LOG
 .endif
+CFLAGS+= -I${SRCTOP}/contrib/libucl/include
+
+# Temporary disable capsicum, until we integrate checkpoint code with it.
+CFLAGS+= -DWITHOUT_CAPSICUM
 
 WARNS?=	2
 
