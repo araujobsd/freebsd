@@ -1742,15 +1742,30 @@ fail:
 	return (err);
 }
 
+void
+spinup_vcpu(struct vmctx *ctx, int vcpu)
+{
+	int error;
+	uint64_t rip;
+
+	error = vm_get_register(ctx, vcpu, VM_REG_GUEST_RIP, &rip);
+	assert(error == 0);
+
+	fbsdrun_set_capabilities(ctx, vcpu);
+	error = vm_set_capability(ctx, vcpu, VM_CAP_UNRESTRICTED_GUEST, 1);
+	assert(error == 0);
+
+	fbsdrun_addcpu(ctx, BSP, vcpu, rip);
+}
+
 int
 main(int argc, char *argv[])
 {
 	int c, error, dbg_port, gdb_port, err, bvmcons;
-	int max_vcpus, mptgen, memflags;
+	int max_vcpus, mptgen, memflags, vcpu;
 	int rtc_localtime;
 	bool gdb_stop;
 	struct vmctx *ctx;
-	uint64_t rip;
 	size_t memsize;
 	char *optstr, *restore_file = NULL;
 	struct restore_state rstate;
@@ -1914,8 +1929,6 @@ main(int argc, char *argv[])
 		exit(4);
 	}
 
-	fbsdrun_set_capabilities(ctx, BSP);
-
 	vm_set_memflags(ctx, memflags);
 	err = vm_setup_memory(ctx, memsize, VM_MMAP_ALL);
 	if (err) {
@@ -1977,8 +1990,6 @@ main(int argc, char *argv[])
 		}
 
 	}
-	error = vm_get_register(ctx, BSP, VM_REG_GUEST_RIP, &rip);
-	assert(error == 0);
 
 	/*
 	 * build the guest tables, MP etc.
@@ -2026,10 +2037,12 @@ main(int argc, char *argv[])
 	 */
 	setproctitle("%s", vmname); 
 	
-	/*
-	 * Add CPU 0
+	/* If we restore a VM, start all vCPUs now (including APs), otherwise,
+	 * let the guest OS to spin them up later via vmexits.
 	 */
-	fbsdrun_addcpu(ctx, BSP, BSP, rip);
+	for (vcpu = 0; vcpu < guest_ncpus; vcpu++)
+		if (vcpu == BSP || restore_file)
+			spinup_vcpu(ctx, vcpu);
 
 	/*
 	 * Head off to the main event dispatch loop
