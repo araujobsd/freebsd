@@ -193,6 +193,7 @@ usage(int code)
 		"       -l: LPC device configuration\n"
 		"       -m: memory size in MB\n"
 		"       -r: path to checkpoint file\n"
+		"       -R: <host:port> the source vm host and port for migration\n"
 		"       -p: pin 'vcpu' to 'hostcpu'\n"
 		"       -P: vmexit from the guest on pause\n"
 		"       -s: <slot,driver,configinfo> PCI slot config\n"
@@ -1397,6 +1398,43 @@ restore_kernel_structs(struct vmctx *ctx, struct restore_state *rstate)
 }
 
 static int
+receive_vm_migration(struct vmctx *ctx, char *migration_data)
+{
+	struct migrate_req req;
+	char *hostname;
+	int rc;
+
+	hostname = malloc(MAX_HOSTNAME_LEN * sizeof(char));
+	if (hostname == NULL) {
+		perror("Could not allocate buffer\r\n");
+		return (-1);
+	}
+
+	rc = sscanf(migration_data, "%s:%d", hostname, &(req.port));
+
+	if (rc == 0) {
+		fprintf(stderr, "Unknown format for <host:port> parameter\r\n");
+		free(hostname);
+		return (-1);
+	} else if (rc == 1) {
+		/* If only one variable could be read, it should be the host */
+		req.port = DEFAULT_MIGRATION_PORT;
+	}
+
+	strncpy(req.host, hostname, MAX_HOSTNAME_LEN);
+	free(hostname);
+	// TODO2: check if port is valid
+	// TODO2: check if hostname is valid and if is an IP
+	// or a hostname
+
+	req.type = MIGRATE_REQ_IP;
+
+	rc = recv_migrate_req(ctx, req);
+
+	return (rc);
+}
+
+static int
 restore_pci_devs(struct vmctx *ctx, struct restore_state *rstate)
 {
 	void *dev_ptr;
@@ -1950,6 +1988,7 @@ main(int argc, char *argv[])
 	struct vmctx *ctx;
 	size_t memsize;
 	char *optstr, *restore_file = NULL;
+	char *receive_migration = NULL;
 	struct restore_state rstate;
 
 	bvmcons = 0;
@@ -1965,7 +2004,7 @@ main(int argc, char *argv[])
 	rtc_localtime = 1;
 	memflags = 0;
 
-	optstr = "abehuwxACHIPSWYp:g:G:c:s:m:l:U:r:";
+	optstr = "abehuwxACHIPSWYp:g:G:c:s:m:l:U:r:R:";
 	while ((c = getopt(argc, argv, optstr)) != -1) {
 		switch (c) {
 		case 'a':
@@ -2010,6 +2049,9 @@ main(int argc, char *argv[])
 			break;
 		case 'r':
 			restore_file = optarg;
+			break;
+		case 'R':
+			receive_migration = optarg;
 			break;
 		case 's':
 			if (pci_parse_slot(optarg) != 0)
@@ -2181,6 +2223,14 @@ main(int argc, char *argv[])
 
 	}
 
+	if (receive_migration != NULL) {
+		fprintf(stdout, "Starting the migration process...\r\n");
+		if (receive_vm_migration(ctx, receive_migration) != 0) {
+			fprintf(stderr, "Failed to migrate the vm.\r\n");
+			exit(1);
+		}
+	}
+
 	/*
 	 * build the guest tables, MP etc.
 	 */
@@ -2233,7 +2283,7 @@ main(int argc, char *argv[])
 	 */
 
 	for (vcpu = 0; vcpu < guest_ncpus; vcpu++)
-		if (vcpu == BSP || restore_file) {
+		if (vcpu == BSP || restore_file || receive_migration) {
 			fprintf(stdout, "spinning up vcpu no %d...\r\n", vcpu);
 			spinup_vcpu(ctx, vcpu);
 		}
