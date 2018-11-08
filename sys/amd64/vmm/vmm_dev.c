@@ -793,6 +793,9 @@ vmmdev_ioctl(struct cdev *cdev, u_long cmd, caddr_t data, int fflag,
 		error = vm_restore_req(sc->vm, restore_req->req,
 				restore_req->buffer, restore_req->size);
 		break;
+	case VM_CLEAR_VMM_DIRTY_BITS:
+		error = vm_clear_vmm_dirty_bits(sc->vm);
+		break;
 	default:
 		error = ENOTTY;
 		break;

@@ -367,7 +367,8 @@ enum {
 
 	/* checkpoint */
 	IOCNUM_SNAPSHOT_REQ = 113,
-	IOCNUM_RESTORE_REQ = 114
+	IOCNUM_RESTORE_REQ = 114,
+	IOCNUM_VM_CLEAR_VMM_DIRTY_BITS = 116,
 };
 
 #define	VM_RUN		\
@@ -488,4 +489,6 @@ enum {
 	_IOWR('v', IOCNUM_SNAPSHOT_REQ, struct vm_snapshot_req)
 #define VM_RESTORE_REQ \
 	_IOWR('v', IOCNUM_RESTORE_REQ, struct vm_restore_req)
+#define VM_CLEAR_VMM_DIRTY_BITS \
+	_IO('v', IOCNUM_VM_CLEAR_VMM_DIRTY_BITS)
 #endif

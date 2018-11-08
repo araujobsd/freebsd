@@ -792,6 +792,37 @@ vm_radix_wait(void)
 	uma_zwait(vm_radix_node_zone);
 }
 
+
+static void
+vm_radix_tree_walk_clear_dirty_bits_rec(struct vm_radix_node *rnode)
+{
+	vm_page_t m;
+	int slot;
+
+	if (rnode == NULL)
+		return;
+
+	if (vm_radix_isleaf(rnode)) {
+		m = vm_radix_topage(rnode);
+		vm_page_clear_vmm_dirty_bit(m);
+		return;
+	}
+
+	for (slot = 0; slot < VM_RADIX_COUNT; slot ++) {
+		vm_radix_tree_walk_clear_dirty_bits_rec(rnode->rn_child[slot]);
+	}
+}
+
+void
+vm_radix_tree_walk_clear_dirty_bits(struct vm_radix *rtree)
+{
+	struct vm_radix_node *rnode;
+
+	rnode = vm_radix_getroot(rtree);
+
+	vm_radix_tree_walk_clear_dirty_bits_rec(rnode);
+}
+
 #ifdef DDB
 /*
  * Show details about the given radix node.

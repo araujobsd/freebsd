@@ -1354,6 +1354,27 @@ vm_page_dirty_KBI(vm_page_t m)
 	m->oflags |= VPO_VMM_DIRTY;
 }
 
+void
+vm_page_clear_vmm_dirty_bit(vm_page_t m)
+{
+	m->oflags &= ~VPO_VMM_DIRTY;
+}
+
+uint8_t
+vm_page_test_vmm_dirty(vm_page_t m)
+{
+	uint64_t value;
+
+	vm_page_test_dirty(m);
+
+	value = m->oflags & VPO_VMM_DIRTY;
+
+	if (value == 0)
+		return (0);
+	else
+		return (1);
+}
+
 /*
  *	vm_page_insert:		[ internal use only ]
  *

@@ -1737,6 +1737,14 @@ vm_restore_req(struct vmctx *ctx, enum snapshot_req req, char *buffer, size_t si
 	return (error);
 }
 
+
+void
+vm_clear_vmm_dirty_bits(struct vmctx *ctx)
+{
+
+	ioctl(ctx->fd, VM_CLEAR_VMM_DIRTY_BITS);
+}
+
 int
 vm_set_topology(struct vmctx *ctx,
     uint16_t sockets, uint16_t cores, uint16_t threads, uint16_t maxcpus)
