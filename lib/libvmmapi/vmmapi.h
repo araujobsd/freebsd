@@ -299,6 +299,7 @@ int	vm_restore_req(struct vmctx *ctx, enum snapshot_req req, char *buffer,
 
 int	vm_restore_mem(struct vmctx *ctx, int vmmem_fd, size_t size);
 
+int	vm_get_dirty_page_list(struct vmctx *ctx, char *page_list);
 void	vm_clear_vmm_dirty_bits(struct vmctx *ctx);
 
 #endif	/* _VMMAPI_H_ */

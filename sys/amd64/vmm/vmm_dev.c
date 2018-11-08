@@ -371,6 +371,7 @@ vmmdev_ioctl(struct cdev *cdev, u_long cmd, caddr_t data, int fflag,
 	struct vm_vmem_stat *vmem_stat;
 	struct vm_snapshot_req *snapshot_req;
 	struct vm_restore_req *restore_req;
+	struct vm_get_dirty_page_list *page_list;
 
 	sc = vmmdev_lookup2(cdev);
 	if (sc == NULL)
@@ -795,6 +796,10 @@ vmmdev_ioctl(struct cdev *cdev, u_long cmd, caddr_t data, int fflag,
 		break;
 	case VM_CLEAR_VMM_DIRTY_BITS:
 		error = vm_clear_vmm_dirty_bits(sc->vm);
+		break;
+	case VM_GET_DIRTY_PAGE_LIST:
+		page_list = (struct vm_get_dirty_page_list *)data;
+		error = vm_get_dirty_page_list(sc->vm, page_list->page_list);
 		break;
 	default:
 		error = ENOTTY;

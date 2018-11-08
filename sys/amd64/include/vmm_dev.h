@@ -282,6 +282,10 @@ struct vm_restore_req {
 	size_t size;		/* in: size of data to transfer to vmm*/
 };
 
+struct vm_get_dirty_page_list {
+	uint8_t *page_list;
+};
+
 enum {
 	/* general routines */
 	IOCNUM_ABIVERS = 0,
@@ -369,6 +373,7 @@ enum {
 	IOCNUM_SNAPSHOT_REQ = 113,
 	IOCNUM_RESTORE_REQ = 114,
 	IOCNUM_VM_CLEAR_VMM_DIRTY_BITS = 116,
+	IOCNUM_VM_GET_DIRTY_PAGE_LIST = 117,
 };
 
 #define	VM_RUN		\
@@ -491,4 +496,6 @@ enum {
 	_IOWR('v', IOCNUM_RESTORE_REQ, struct vm_restore_req)
 #define VM_CLEAR_VMM_DIRTY_BITS \
 	_IO('v', IOCNUM_VM_CLEAR_VMM_DIRTY_BITS)
+#define VM_GET_DIRTY_PAGE_LIST \
+	_IOWR('v', IOCNUM_VM_GET_DIRTY_PAGE_LIST, struct vm_get_dirty_page_list)
 #endif

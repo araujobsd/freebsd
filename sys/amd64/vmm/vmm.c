@@ -3133,6 +3133,48 @@ err_copyin:
 }
 
 int
+vm_get_dirty_page_list(struct vm *vm, uint8_t *page_list)
+{
+	printf("%s\r\n", __func__);
+	int error = 0;
+	struct vmspace *vm_vmspace;
+	struct vm_map *vmmap;
+	struct vm_map_entry *entry;
+	struct vm_object *object;
+	struct vm_radix *rtree;
+
+	vm_vmspace = vm->vmspace;
+
+	if (vm_vmspace == NULL) {
+		printf("%s: vm_vmspace is null\r\n", __func__);
+		error = -1;
+		return (error);
+	}
+
+	vmmap = &vm_vmspace->vm_map;
+
+	vm_map_lock(vmmap);
+	if (vmmap->busy)
+		vm_map_wait_busy(vmmap);
+
+	for (entry = vmmap->header.next; entry != &vmmap->header; entry = entry->next) {
+		object = entry->object.vm_object;
+
+		if (object == NULL)
+			continue;
+		VM_OBJECT_WLOCK(object);
+		rtree = &object->rtree;
+
+		vm_radix_tree_walk_complete_page_list(rtree, page_list);
+		VM_OBJECT_WUNLOCK(object);
+	}
+
+	vm_map_unlock(vmmap);
+
+	return (error);
+}
+
+int
 vm_clear_vmm_dirty_bits(struct vm *vm)
 {
 	int error = 0;

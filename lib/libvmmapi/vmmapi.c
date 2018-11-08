@@ -1737,6 +1737,18 @@ vm_restore_req(struct vmctx *ctx, enum snapshot_req req, char *buffer, size_t si
 	return (error);
 }
 
+int
+vm_get_dirty_page_list(struct vmctx *ctx, char *page_list)
+{
+	int error;
+	struct vm_get_dirty_page_list list;
+
+	bzero(&list, sizeof(struct vm_get_dirty_page_list));
+	list.page_list = (uint8_t *)page_list;
+	error = ioctl(ctx->fd, VM_GET_DIRTY_PAGE_LIST, &list);
+
+	return (error);
+}
 
 void
 vm_clear_vmm_dirty_bits(struct vmctx *ctx)

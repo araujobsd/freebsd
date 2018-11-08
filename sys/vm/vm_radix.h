@@ -50,6 +50,8 @@ void		vm_radix_zinit(void);
 
 
 void		vm_radix_tree_walk_clear_dirty_bits(struct vm_radix *rtree);
+void		vm_radix_tree_walk_complete_page_list(struct vm_radix *rtree,
+						      uint8_t *page_list);
 
 static __inline void
 vm_radix_init(struct vm_radix *rtree)
