@@ -12,6 +12,6 @@ LIBADD=	vmmapi util
 
 WARNS?=	3
 
-CFLAGS+= -I${SRCTOP}/sys/amd64/vmm
+CFLAGS+= -I${SRCTOP}/sys/amd64/vmm -I${SRCTOP}/lib/libvmmapi
 
 .include <bsd.prog.mk>

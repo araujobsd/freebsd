@@ -3,7 +3,7 @@
 #
 
 .include <src.opts.mk>
-CFLAGS+=-I${SRCTOP}/sys
+CFLAGS+=-I${SRCTOP}/sys -I${SRCTOP}/lib/libvmmapi
 .PATH:  ${SRCTOP}/sys/cam/ctl
 
 PROG=	bhyve

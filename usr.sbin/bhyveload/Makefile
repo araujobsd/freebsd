@@ -9,6 +9,6 @@ LIBADD=	vmmapi
 
 WARNS?=	3
 
-CFLAGS+=-I${SRCTOP}/stand/userboot
+CFLAGS+=-I${SRCTOP}/stand/userboot -I${SRCTOP}/lib/libvmmapi
 
 .include <bsd.prog.mk>
