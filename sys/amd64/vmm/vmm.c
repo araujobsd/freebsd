@@ -3208,6 +3208,8 @@ vm_clear_vmm_dirty_bits(struct vm *vm)
 		rtree = &object->rtree;
 
 		vm_radix_tree_walk_clear_dirty_bits(rtree);
+
+		vm_object_page_clean(object, 0, 0, OBJPC_SYNC);
 		VM_OBJECT_WUNLOCK(object);
 	}
 
