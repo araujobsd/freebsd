@@ -87,6 +87,7 @@ usage(bool cpu_intel)
 	"       [--checkpoint=<filename>]\n"
 	"       [--suspend=<filename>]\n"
 	"       [--migrate=<host,port>]\n"
+	"       [--migrate-live=<host,port>]\n"
 	"       [--get-all]\n"
 	"       [--get-stats]\n"
 	"       [--set-desc-ds]\n"
@@ -300,6 +301,7 @@ static int show_vmem_stat;
 static int vm_checkpoint_opt;
 static int vm_suspend_opt;
 static int vm_migrate;
+static int vm_migrate_live;
 static int vcpu_lock_all_opt;
 static int vcpu_unlock_all_opt;
 
@@ -609,6 +611,7 @@ enum {
 	SET_CHECKPOINT_FILE,
 	SET_SUSPEND_FILE,
 	MIGRATE_VM,
+	MIGRATE_VM_LIVE,
 };
 
 static void
@@ -1481,6 +1484,7 @@ setup_options(bool cpu_intel)
 		{ "checkpoint", 	REQ_ARG, 0,	SET_CHECKPOINT_FILE},
 		{ "suspend", 		REQ_ARG, 0,	SET_SUSPEND_FILE},
 		{ "migrate", 		REQ_ARG, 0,	MIGRATE_VM},
+		{ "migrate-live", 	REQ_ARG, 0,	MIGRATE_VM_LIVE},
 		{ "vcpu_lock_all", 	NO_ARG,&vcpu_lock_all_opt,		1 },
 		{ "vcpu_unlock_all", 	NO_ARG,&vcpu_unlock_all_opt,	1 },
 	};
@@ -1790,7 +1794,7 @@ send_start_suspend(struct vmctx *ctx, const char *suspend_file)
 }
 
 static int
-send_start_migrate(struct vmctx *ctx, const char *migrate_vm)
+send_start_migrate(struct vmctx *ctx, const char *migrate_vm, bool live)
 {
 	struct migrate_req req;
 	struct checkpoint_op op;
@@ -1801,7 +1805,10 @@ send_start_migrate(struct vmctx *ctx, const char *migrate_vm)
 	memset(op.host, 0, MAX_HOSTNAME_LEN);
 	hostname = strdup(migrate_vm);
 
-	op.op = START_MIGRATE;
+	if (live)
+		op.op = START_MIGRATE_LIVE;
+	else
+		op.op = START_MIGRATE;
 
 	if ((pos = strchr(hostname, ',')) != NULL ) {
 		*pos = '\0';
@@ -2026,6 +2033,10 @@ main(int argc, char *argv[])
 			break;
 		case MIGRATE_VM:
 			vm_migrate = 1;
+			migrate_host = optarg;
+			break;
+		case MIGRATE_VM_LIVE:
+			vm_migrate_live = 1;
 			migrate_host = optarg;
 			break;
 		default:
@@ -2523,7 +2534,10 @@ main(int argc, char *argv[])
 		error = send_start_suspend(ctx, suspend_file);
 
 	if (!error && vm_migrate)
-		error = send_start_migrate(ctx, migrate_host);
+		error = send_start_migrate(ctx, migrate_host, false);
+
+	if (!error && vm_migrate_live)
+		error = send_start_migrate(ctx, migrate_host, true);
 
 	if (!error && vcpu_lock_all_opt)
 		error = vm_vcpu_lock_all(ctx);
