@@ -34,6 +34,8 @@
 #include <sys/sdt.h>
 #include <x86/segments.h>
 
+#include "vmm_migration.h"
+
 #ifdef _KERNEL
 SDT_PROVIDER_DECLARE(vmm);
 #endif
@@ -278,6 +280,7 @@ int vm_restore_req(struct vm *vm, enum snapshot_req req, void *buffer,
 		   size_t buf_size);
 int vm_get_dirty_page_list(struct vm *vm, uint8_t *page_list);
 int vm_clear_vmm_dirty_bits(struct vm *vm);
+int vm_get_vmm_pages(struct vm *vm, struct vmm_migration_pages_req *pages_req);
 
 
 #ifdef _SYS__CPUSET_H_

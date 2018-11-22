@@ -2457,6 +2457,25 @@ SYSCTL_PROC(_vm, OID_AUTO, objects, CTLTYPE_STRUCT | CTLFLAG_RW | CTLFLAG_SKIP |
     CTLFLAG_MPSAFE, NULL, 0, sysctl_vm_object_list, "S,kinfo_vmobject",
     "List of VM objects");
 
+int
+vm_object_copy_page(vm_object_t object, vm_pindex_t pindex, void *dst)
+{
+	vm_page_t page;
+	vm_offset_t page_src;
+
+	VM_OBJECT_ASSERT_WLOCKED(object);
+
+	page = vm_page_lookup(object, pindex);
+	if (page == NULL) {
+		return (-1);
+	}
+
+	page_src = PHYS_TO_DMAP(VM_PAGE_TO_PHYS(page));
+	memcpy(dst, (void *)page_src, PAGE_SIZE);
+
+	return (0);
+}
+
 #include "opt_ddb.h"
 #ifdef DDB
 #include <sys/kernel.h>

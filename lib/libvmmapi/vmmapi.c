@@ -1738,6 +1738,21 @@ vm_restore_req(struct vmctx *ctx, enum snapshot_req req, char *buffer, size_t si
 }
 
 int
+vm_get_pages_num(struct vmctx *ctx, size_t *lowmem_pages, size_t *highmem_pages)
+{
+	if (ctx == NULL)
+		return (-1);
+
+	if (lowmem_pages != NULL)
+		*lowmem_pages = ctx->lowmem / PAGE_SIZE;
+
+	if (highmem_pages != NULL)
+		*highmem_pages = ctx->highmem / PAGE_SIZE;
+
+	return (0);
+}
+
+int
 vm_get_dirty_page_list(struct vmctx *ctx, char *page_list)
 {
 	int error;
@@ -1755,6 +1770,56 @@ vm_clear_vmm_dirty_bits(struct vmctx *ctx)
 {
 
 	ioctl(ctx->fd, VM_CLEAR_VMM_DIRTY_BITS);
+}
+
+int
+vm_get_vmm_pages(struct vmctx *ctx, struct vmm_migration_pages_req *pages_req)
+{
+	int error;
+	size_t index;
+
+	if (pages_req == NULL)
+		return (-1);
+
+	if (pages_req->pages_required > VMM_PAGE_CHUNK) {
+		fprintf(stderr,
+			"%s: pages_required too big\r\n",
+			__func__);
+		return (-1);
+	}
+
+	for (index = 0; index < pages_req->pages_required; index ++) {
+		if (pages_req->pages[index].page == NULL) {
+			fprintf(stderr,
+				"%s: a page is null\r\n",
+				__func__);
+			return (-1);
+		}
+	}
+
+	error = ioctl(ctx->fd, VM_GET_VMM_PAGES, pages_req);
+
+	return (error);
+}
+
+int
+vm_init_vmm_migration_pages_req(struct vmm_migration_pages_req *req)
+{
+	size_t index;
+	struct vmm_migration_page *page;
+
+	for (index = 0; index < VMM_PAGE_CHUNK; index++) {
+		page = &req->pages[index];
+		page->page = malloc(PAGE_SIZE * sizeof(uint8_t));
+		if (page->page == NULL) {
+			fprintf(stderr,
+			"%s: page %zu is NULL\r\n",
+			__func__, index);
+			return (-1);
+		}
+	}
+
+	return (0);
 }
 
 int

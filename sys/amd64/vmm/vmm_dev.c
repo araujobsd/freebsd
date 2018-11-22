@@ -372,6 +372,7 @@ vmmdev_ioctl(struct cdev *cdev, u_long cmd, caddr_t data, int fflag,
 	struct vm_snapshot_req *snapshot_req;
 	struct vm_restore_req *restore_req;
 	struct vm_get_dirty_page_list *page_list;
+	struct vmm_migration_pages_req *pages_req;
 
 	sc = vmmdev_lookup2(cdev);
 	if (sc == NULL)
@@ -800,6 +801,10 @@ vmmdev_ioctl(struct cdev *cdev, u_long cmd, caddr_t data, int fflag,
 	case VM_GET_DIRTY_PAGE_LIST:
 		page_list = (struct vm_get_dirty_page_list *)data;
 		error = vm_get_dirty_page_list(sc->vm, page_list->page_list);
+		break;
+	case VM_GET_VMM_PAGES:
+		pages_req = (struct vmm_migration_pages_req *)data;
+		error = vm_get_vmm_pages(sc->vm, pages_req);
 		break;
 	default:
 		error = ENOTTY;

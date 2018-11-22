@@ -65,6 +65,7 @@ __FBSDID("$FreeBSD$");
 #include <machine/pcb.h>
 #include <machine/smp.h>
 #include <machine/md_var.h>
+#include <machine/vmparam.h>
 #include <x86/psl.h>
 #include <x86/apicreg.h>
 
@@ -3212,6 +3213,63 @@ vm_clear_vmm_dirty_bits(struct vm *vm)
 
 	vm_map_unlock(vmmap);
 
+
+	return (error);
+}
+
+static inline void
+vm_migration_copy_pages(vm_object_t object,
+			struct vmm_migration_pages_req *page_req)
+{
+	vm_pindex_t pindex;
+	struct vmm_migration_page migration_page;
+	size_t page_idx;
+	void *dst;
+
+	for (page_idx = 0; page_idx < page_req->pages_required; page_idx ++) {
+		migration_page = page_req->pages[page_idx];
+		pindex = migration_page.pindex;
+		dst = (void *) migration_page.page;
+		vm_object_copy_page(object, pindex, dst);
+	}
+}
+
+int
+vm_get_vmm_pages(struct vm *vm, struct vmm_migration_pages_req *pages_req)
+{
+	int error = 0;
+	struct vmspace *vm_vmspace;
+	struct vm_map *vmmap;
+	struct vm_map_entry *entry;
+	struct vm_object *object;
+
+	vm_vmspace = vm->vmspace;
+
+	if (vm_vmspace == NULL) {
+		printf("%s: vm_vmspace is null\r\n", __func__);
+		error = -1;
+		return (error);
+	}
+
+	vmmap = &vm_vmspace->vm_map;
+
+	vm_map_lock(vmmap);
+	if (vmmap->busy)
+		vm_map_wait_busy(vmmap);
+
+	for (entry = vmmap->header.next; entry != &vmmap->header; entry = entry->next) {
+		object = entry->object.vm_object;
+
+		if (object == NULL)
+			continue;
+
+		VM_OBJECT_WLOCK(object);
+		vm_migration_copy_pages(object, pages_req);
+		VM_OBJECT_WUNLOCK(object);
+		break;
+	}
+
+	vm_map_unlock(vmmap);
 
 	return (error);
 }
